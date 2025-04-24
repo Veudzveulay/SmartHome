@@ -23,11 +23,14 @@ void simulerCapteurs(DatabaseManagerSQLite& db) {
 }
 
 int main() {
-    crow::App<AuthMiddleware> app;
     DatabaseManagerSQLite db("maison.db");
+
+    crow::App<AuthMiddleware> app;
+    app.get_middleware<AuthMiddleware>().set_db(db);
 
     db.creerTableCapteurs();
     db.creerTableUtilisateurs();
+
     definirRoutes(app, db);
 
     std::thread simulateur(simulerCapteurs, std::ref(db));

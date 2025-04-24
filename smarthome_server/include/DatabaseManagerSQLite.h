@@ -24,6 +24,7 @@ public:
     bool utilisateurExiste(const std::string& username, const std::string& password);
     bool ajouterUtilisateur(const std::string& username, const std::string& password);
     bool tokenValide(const std::string& token);
+    bool revoquerToken(const std::string& token);
 
     std::string genererTokenPourUtilisateur(const std::string& username, const std::string& password);
     std::vector<json> getAnomalies(float seuilTemp = 30.0);

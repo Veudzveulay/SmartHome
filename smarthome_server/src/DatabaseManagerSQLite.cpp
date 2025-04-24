@@ -181,7 +181,7 @@ bool DatabaseManagerSQLite::ajouterUtilisateur(const std::string& username, cons
 
 
 bool DatabaseManagerSQLite::utilisateurExiste(const std::string& username, const std::string& password) {
-    const char* sql = "SELECT COUNT(*) FROM users WHERE username = ? AND password = ?";
+    const char* sql = "SELECT COUNT(*) FROM utilisateurs WHERE username = ? AND password = ?";
     sqlite3_stmt* stmt;
 
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
@@ -199,21 +199,38 @@ bool DatabaseManagerSQLite::utilisateurExiste(const std::string& username, const
 }
 
 std::string DatabaseManagerSQLite::genererTokenPourUtilisateur(const std::string& username, const std::string& password) {
-    std::string token = generateRandomToken();
-    const char* sql = "INSERT INTO tokens (token, username) VALUES (?, ?)";
+    const char* selectSql = "SELECT * FROM utilisateurs WHERE username = ? AND password = ?";
     sqlite3_stmt* stmt;
+    std::string token;
 
-    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
-        sqlite3_bind_text(stmt, 1, token.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 2, username.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_step(stmt);
+    if (sqlite3_prepare_v2(db, selectSql, -1, &stmt, nullptr) == SQLITE_OK) {
+        sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, password.c_str(), -1, SQLITE_TRANSIENT);
+
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            // ✅ Génération simple de token (aléatoire ou basé sur UUID si dispo)
+            token = generateRandomToken();  // Assure-toi d’avoir cette méthode
+
+            // 🔄 Mise à jour du token dans la base
+            sqlite3_stmt* updateStmt;
+            const char* updateSql = "UPDATE utilisateurs SET token = ? WHERE username = ?";
+            if (sqlite3_prepare_v2(db, updateSql, -1, &updateStmt, nullptr) == SQLITE_OK) {
+                sqlite3_bind_text(updateStmt, 1, token.c_str(), -1, SQLITE_TRANSIENT);
+                sqlite3_bind_text(updateStmt, 2, username.c_str(), -1, SQLITE_TRANSIENT);
+                sqlite3_step(updateStmt);
+                sqlite3_finalize(updateStmt);
+            }
+        }
     }
+
     sqlite3_finalize(stmt);
     return token;
 }
 
+
 bool DatabaseManagerSQLite::tokenValide(const std::string& token) {
-    const char* sql = "SELECT COUNT(*) FROM tokens WHERE token = ?";
+    std::cout << "🔍 Vérif token : " << token << std::endl;
+    const char* sql = "SELECT COUNT(*) FROM utilisateurs WHERE token = ?";
     sqlite3_stmt* stmt;
 
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
@@ -225,5 +242,17 @@ bool DatabaseManagerSQLite::tokenValide(const std::string& token) {
         }
     }
     sqlite3_finalize(stmt);
+    return false;
+}
+
+bool DatabaseManagerSQLite::revoquerToken(const std::string& token) {
+    const char* sql = "UPDATE utilisateurs SET token = '' WHERE token = ?";
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+        sqlite3_bind_text(stmt, 1, token.c_str(), -1, SQLITE_TRANSIENT);
+        int rc = sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+        return rc == SQLITE_DONE;
+    }
     return false;
 }

@@ -1,6 +1,6 @@
 /.vscode
-/asio
+/smarthome_server/asio
 /build
-/crow
-/out
+/smarthome_server/crow
+/smarthome_server/out
 maison.db

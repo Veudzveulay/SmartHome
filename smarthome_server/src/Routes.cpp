@@ -157,13 +157,6 @@ void definirRoutes(crow::App<AuthMiddleware>& app, DatabaseManagerSQLite& db) {
                     crow::response(500, "❌ Erreur de suppression");
     });
 
-    // Route protégée par AuthMiddleware
-    CROW_ROUTE(app, "/admin")
-    .name("admin-secured")
-    ([](const crow::request& req){
-        return crow::response(200, "🔐 Accès autorisé à l'admin sécurisé !");
-    });
-
     CROW_ROUTE(app, "/login").methods(crow::HTTPMethod::Post)([&db](const crow::request& req) {
         try {
             auto body = json::parse(req.body);
@@ -205,6 +198,21 @@ void definirRoutes(crow::App<AuthMiddleware>& app, DatabaseManagerSQLite& db) {
         }
     });
     
+    // 🔐 Route de déconnexion
+    CROW_ROUTE(app, "/logout").methods(crow::HTTPMethod::Post)([&db](const crow::request& req) {
+        auto token = req.get_header_value("Authorization");
+
+        if (token.rfind("Bearer ", 0) == 0)
+            token = token.substr(7);  // Enlève "Bearer "
+
+        if (token.empty())
+            return crow::response(400, "❌ Aucun token fourni");
+
+        bool ok = db.revoquerToken(token);
+        return ok
+            ? crow::response(200, "✅ Déconnexion réussie, token supprimé.")
+            : crow::response(500, "❌ Échec de la déconnexion.");
+    });
     
     
 }
