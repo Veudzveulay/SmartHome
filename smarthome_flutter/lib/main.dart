@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'pages/login_page.dart';
-
+import 'pages/home_page.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -19,6 +19,10 @@ class _MyAppState extends State<MyApp> {
     setState(() => token = t);
   }
 
+  void _logout() {
+    setState(() => token = null);
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -26,7 +30,7 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       home: token == null
           ? LoginPage(onLogin: _setToken)
-          : const Center(child: Text('🏠 Accueil (à faire après)')),
+          : HomePage(token: token!, onLogout: _logout),
     );
   }
 }
