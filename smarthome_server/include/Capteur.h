@@ -7,8 +7,8 @@
 class Capteur {
 private:
     int id;
-    std::string type; // ex : "température", "fumée"
-    std::string statut; // ON/OFF, OUVERT/FERMÉ
+    std::string type; 
+    std::string statut;
     float valeur;
     std::string horodatage;
 

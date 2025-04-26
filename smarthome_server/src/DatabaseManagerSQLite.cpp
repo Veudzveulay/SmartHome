@@ -33,7 +33,7 @@ DatabaseManagerSQLite::~DatabaseManagerSQLite() {
 bool DatabaseManagerSQLite::creerTableCapteurs() {
     const char* sql = R"(
         CREATE TABLE IF NOT EXISTS capteurs (
-            id INTEGER,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             type TEXT,
             valeur REAL,
             horodatage TEXT,
@@ -50,6 +50,44 @@ bool DatabaseManagerSQLite::creerTableCapteurs() {
     return true;
 }
 
+bool DatabaseManagerSQLite::creerTableUtilisateurs() {
+    const char* sql = R"(
+        CREATE TABLE IF NOT EXISTS utilisateurs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            password TEXT,
+            token TEXT
+        );
+    )";
+    char* errMsg = nullptr;
+    int rc = sqlite3_exec(db, sql, nullptr, nullptr, &errMsg);
+    if (rc != SQLITE_OK) {
+        std::cerr << "❌ Erreur création table utilisateurs : " << errMsg << std::endl;
+        sqlite3_free(errMsg);
+        return false;
+    }
+    return true;
+}
+
+bool DatabaseManagerSQLite::creerTableHistorique() {
+    const char* sql = R"(
+        CREATE TABLE IF NOT EXISTS historique (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            action TEXT,
+            horodatage TEXT DEFAULT (datetime('now'))
+        );
+    )";
+    char* errMsg = nullptr;
+    int rc = sqlite3_exec(db, sql, nullptr, nullptr, &errMsg);
+    if (rc != SQLITE_OK) {
+        std::cerr << "❌ Erreur création table historique : " << errMsg << std::endl;
+        sqlite3_free(errMsg);
+        return false;
+    }
+    return true;
+}
+
+
 bool DatabaseManagerSQLite::insererValeurCapteur(int id, const std::string& type, float valeur, const std::string& room) {
     std::ostringstream sql;
     sql << "INSERT INTO capteurs (id, type, valeur, horodatage, room) VALUES ("
@@ -64,6 +102,20 @@ bool DatabaseManagerSQLite::insererValeurCapteur(int id, const std::string& type
     }
 
     std::cout << "📥 Donnée insérée : " << type << " = " << valeur << " (" << room << ")" << std::endl;
+    return true;
+}
+
+bool DatabaseManagerSQLite::ajouterActionHistorique(const std::string& action) {
+    std::ostringstream sql;
+    sql << "INSERT INTO historique (action) VALUES ('" << action << "');";
+
+    char* errMsg = nullptr;
+    int rc = sqlite3_exec(db, sql.str().c_str(), nullptr, nullptr, &errMsg);
+    if (rc != SQLITE_OK) {
+        std::cerr << "❌ Erreur insertion historique : " << errMsg << std::endl;
+        sqlite3_free(errMsg);
+        return false;
+    }
     return true;
 }
 
@@ -123,10 +175,11 @@ std::vector<json> DatabaseManagerSQLite::getRoomsWithCapteurs() {
     return resultat;
 }
 
-bool DatabaseManagerSQLite::ajouterCapteur(int id, const std::string& type, const std::string& room) {
+bool DatabaseManagerSQLite::ajouterCapteur(const std::string& type, const std::string& room)
+{
     std::ostringstream sql;
-    sql << "INSERT INTO capteurs (id, type, valeur, horodatage, room) VALUES ("
-        << id << ", '" << type << "', NULL, NULL, '" << room << "');";
+    sql << "INSERT INTO capteurs (type, valeur, horodatage, room) "
+           "VALUES ('" << type << "', NULL, datetime('now'), '" << room << "');";
 
     char* errMsg = nullptr;
     int rc = sqlite3_exec(db, sql.str().c_str(), nullptr, nullptr, &errMsg);
@@ -135,32 +188,13 @@ bool DatabaseManagerSQLite::ajouterCapteur(int id, const std::string& type, cons
         sqlite3_free(errMsg);
         return false;
     }
-    std::cout << "🆕 Capteur ajouté : ID " << id << " (" << type << ") dans " << room << std::endl;
+    std::cout << "🆕 Capteur ajouté : (" << type << ") dans " << room << std::endl;
     return true;
 }
 
 bool DatabaseManagerSQLite::resetCapteurs() {
     const char* sql = "DELETE FROM capteurs;";
     return sqlite3_exec(db, sql, nullptr, nullptr, nullptr) == SQLITE_OK;
-}
-
-bool DatabaseManagerSQLite::creerTableUtilisateurs() {
-    const char* sql = R"(
-        CREATE TABLE IF NOT EXISTS utilisateurs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
-            password TEXT,
-            token TEXT
-        );
-    )";
-    char* errMsg = nullptr;
-    int rc = sqlite3_exec(db, sql, nullptr, nullptr, &errMsg);
-    if (rc != SQLITE_OK) {
-        std::cerr << "❌ Erreur création table utilisateurs : " << errMsg << std::endl;
-        sqlite3_free(errMsg);
-        return false;
-    }
-    return true;
 }
 
 bool DatabaseManagerSQLite::ajouterUtilisateur(const std::string& username, const std::string& password) {
@@ -208,10 +242,8 @@ std::string DatabaseManagerSQLite::genererTokenPourUtilisateur(const std::string
         sqlite3_bind_text(stmt, 2, password.c_str(), -1, SQLITE_TRANSIENT);
 
         if (sqlite3_step(stmt) == SQLITE_ROW) {
-            // ✅ Génération simple de token (aléatoire ou basé sur UUID si dispo)
-            token = generateRandomToken();  // Assure-toi d’avoir cette méthode
+            token = generateRandomToken(); 
 
-            // 🔄 Mise à jour du token dans la base
             sqlite3_stmt* updateStmt;
             const char* updateSql = "UPDATE utilisateurs SET token = ? WHERE username = ?";
             if (sqlite3_prepare_v2(db, updateSql, -1, &updateStmt, nullptr) == SQLITE_OK) {
@@ -229,7 +261,6 @@ std::string DatabaseManagerSQLite::genererTokenPourUtilisateur(const std::string
 
 
 bool DatabaseManagerSQLite::tokenValide(const std::string& token) {
-    std::cout << "🔍 Vérif token : " << token << std::endl;
     const char* sql = "SELECT COUNT(*) FROM utilisateurs WHERE token = ?";
     sqlite3_stmt* stmt;
 

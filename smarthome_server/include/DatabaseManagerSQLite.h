@@ -17,14 +17,16 @@ public:
     ~DatabaseManagerSQLite();
 
     bool creerTableCapteurs();
-    bool insererValeurCapteur(int id, const std::string& type, float valeur, const std::string& room);
-    bool ajouterCapteur(int id, const std::string& type, const std::string& room);
-    bool resetCapteurs();
+    bool creerTableHistorique();
     bool creerTableUtilisateurs();
+    bool insererValeurCapteur(int id, const std::string& type, float valeur, const std::string& room);
+    bool ajouterCapteur(const std::string& type, const std::string& room);
+    bool resetCapteurs();
     bool utilisateurExiste(const std::string& username, const std::string& password);
     bool ajouterUtilisateur(const std::string& username, const std::string& password);
     bool tokenValide(const std::string& token);
     bool revoquerToken(const std::string& token);
+    bool ajouterActionHistorique(const std::string& action);    
 
     std::string genererTokenPourUtilisateur(const std::string& username, const std::string& password);
     std::vector<json> getAnomalies(float seuilTemp = 30.0);

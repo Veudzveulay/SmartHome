@@ -22,6 +22,10 @@ add_executable(SmartHomeServer
     src/Gestionnaire.cpp
     src/DatabaseManagerSQLite.cpp
     src/Routes.cpp
+    src/routes/routes_capteurs.cpp
+    src/routes/routes_auth.cpp
+    src/routes/routes_historique.cpp
+    src/routes/routes_equipements.cpp
 )
 
 

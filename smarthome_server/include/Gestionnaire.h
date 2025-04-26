@@ -16,7 +16,7 @@ public:
     Maison& getMaison();
 
     std::shared_ptr<Capteur> getCapteurParId(int id);
-    std::string getResumeEtat(); // pour tester sans API
+    std::string getResumeEtat();
 };
 
 #endif

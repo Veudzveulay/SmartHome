@@ -30,6 +30,7 @@ int main() {
 
     db.creerTableCapteurs();
     db.creerTableUtilisateurs();
+    db.creerTableHistorique();
 
     definirRoutes(app, db);
 

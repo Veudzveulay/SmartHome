@@ -28,10 +28,11 @@ public:
             res.write("❌ Accès refusé : token invalide");
             res.end();
         }
-        std::cout << "🔐 Token reçu : " << tokenRecu << std::endl;
     }
 
-    void after_handle(crow::request&, crow::response& res, context&) {}
+    void after_handle(crow::request&, crow::response& res, context&) {
+        res.set_header("Content-Type", "application/json; charset=utf-8");
+    }
     void set_db(DatabaseManagerSQLite& db) {
         db_ = &db;
     }
