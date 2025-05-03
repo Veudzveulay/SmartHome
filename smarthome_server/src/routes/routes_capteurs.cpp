@@ -51,6 +51,17 @@ void definirRoutesCapteurs(crow::App<AuthMiddleware>& app, DatabaseManagerSQLite
             return crow::response(500, "❌ Erreur de suppression");
     });
 
+    CROW_ROUTE(app, "/capteurs/<int>").methods(crow::HTTPMethod::Delete)(
+        [&db](int capteurId){
+            bool ok = db.supprimerCapteur(capteurId);
+            if (ok) {
+                return crow::response(200, "🗑️ Capteur supprimé");
+            } else {
+                return crow::response(404, "❌ Capteur introuvable");
+            }
+        }
+    );    
+
     // POST /ajouter_capteur
     CROW_ROUTE(app, "/ajouter_capteur").methods(crow::HTTPMethod::Post)([&db](const crow::request& req){
         try {

@@ -2,11 +2,53 @@
 
 import 'package:flutter/material.dart';
 import '../models/capteur.dart';
+import '../services/api_service.dart';
 
 class SensorCard extends StatelessWidget {
   final Capteur capteur;
+  final String token;
+  final VoidCallback onDelete;
 
-  const SensorCard({Key? key, required this.capteur}) : super(key: key);
+  const SensorCard({
+    Key? key,
+    required this.capteur,
+    required this.token,
+    required this.onDelete,
+  }) : super(key: key);
+
+  void _confirmerSuppression(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Confirmation'),
+        content: const Text('Supprimer ce capteur ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final success = await ApiService.supprimerCapteur(capteur.id, token);
+      if (success) {
+        onDelete();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Capteur supprimé')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❌ Erreur lors de la suppression')),
+        );
+      }
+    }
+  }
 
   Color _getColor() {
     if (capteur.type.toLowerCase() == 'température') {
@@ -56,7 +98,10 @@ class SensorCard extends StatelessWidget {
             ),
           ],
         ),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete, color: Colors.red),
+          onPressed: () => _confirmerSuppression(context),
+        ),
       ),
     );
   }

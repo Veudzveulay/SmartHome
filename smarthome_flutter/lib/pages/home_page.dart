@@ -162,7 +162,11 @@ class _HomePageState extends State<HomePage> {
             return ListView.builder(
               itemCount: capteurs.length,
               itemBuilder: (context, index) {
-                return SensorCard(capteur: capteurs[index]);
+                return SensorCard(
+                  capteur: capteurs[index],
+                  token: widget.token,
+                  onDelete: _refreshData,
+                );
               },
             );
           }

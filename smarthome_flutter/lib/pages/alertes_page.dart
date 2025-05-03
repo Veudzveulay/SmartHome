@@ -56,7 +56,11 @@ class _AlertesPageState extends State<AlertesPage> {
             return ListView.builder(
               itemCount: alertes.length,
               itemBuilder: (context, index) {
-                return SensorCard(capteur: alertes[index]);
+                return SensorCard(
+                  capteur: alertes[index],
+                  token: widget.token,
+                  onDelete: _refreshData,
+                );
               },
             );
           }

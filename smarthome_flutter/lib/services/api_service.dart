@@ -114,4 +114,15 @@ class ApiService {
     return response.statusCode == 201;
   }
 
+  static Future<bool> supprimerCapteur(int id, String token) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/capteurs/$id'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    return response.statusCode == 200;
+  }
+
 }

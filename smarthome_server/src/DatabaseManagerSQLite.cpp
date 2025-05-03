@@ -287,3 +287,17 @@ bool DatabaseManagerSQLite::revoquerToken(const std::string& token) {
     }
     return false;
 }
+
+bool DatabaseManagerSQLite::supprimerCapteur(int id) {
+    std::ostringstream sql;
+    sql << "DELETE FROM capteurs WHERE id = " << id;
+
+    char* errMsg = nullptr;
+    int rc = sqlite3_exec(db, sql.str().c_str(), nullptr, nullptr, &errMsg);
+    if (rc != SQLITE_OK) {
+        std::cerr << "❌ Erreur suppression capteur : " << errMsg << std::endl;
+        sqlite3_free(errMsg);
+        return false;
+    }
+    return true;
+}
