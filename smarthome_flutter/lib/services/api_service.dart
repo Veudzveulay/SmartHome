@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../models/capteur.dart';
 import '../models/room.dart';
 import '../models/action_historique.dart';
+import '../models/seuil.dart';
 
 class ApiService {
   static const String baseUrl = "http://localhost:18080";
@@ -123,6 +124,60 @@ class ApiService {
     );
 
     return response.statusCode == 200;
+  }
+
+  static Future<bool> modifierSeuil(String type, double seuil, String token) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/seuils'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({'type': type, 'seuil': seuil}),
+    );
+
+    return response.statusCode == 200;
+  }
+
+  static Future<List<Seuil>> fetchSeuils(String token) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/seuils'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final List data = json.decode(response.body);
+      return data.map((e) => Seuil.fromJson(e)).toList();
+    } else {
+      throw Exception("Erreur récupération des seuils");
+    }
+  }
+
+  static Future<bool> setSeuil(String type, double valeur, String token) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/seuils'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: json.encode({'type': type, 'valeur': valeur}),
+    );
+
+    return response.statusCode == 200;
+  }
+  
+  static Future<List<String>> fetchTypesCapteurs(String token) async {
+    final url = Uri.parse('$baseUrl/types_capteurs');
+    final response = await http.get(url, headers: {
+      'Authorization': 'Bearer $token',
+    });
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      return data.map((e) => e.toString()).toList();
+    } else {
+      throw Exception('Erreur récupération des types de capteurs');
+    }
   }
 
 }

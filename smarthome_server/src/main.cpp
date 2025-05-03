@@ -8,7 +8,7 @@
 void simulerCapteurs(DatabaseManagerSQLite& db) {
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<> tempDist(15.0, 35.0);
+    std::uniform_real_distribution<> tempDist(31.0, 35.0);
     std::uniform_int_distribution<> idDist(1, 5);
     std::vector<std::string> rooms = {"salon", "cuisine", "chambre", "sdb"};
     std::uniform_int_distribution<> roomDist(0, rooms.size() - 1);
@@ -31,6 +31,7 @@ int main() {
     db.creerTableCapteurs();
     db.creerTableUtilisateurs();
     db.creerTableHistorique();
+    db.creerTableSeuils();
 
     definirRoutes(app, db);
 

@@ -8,7 +8,8 @@ import 'rooms_page.dart';
 import 'alertes_page.dart';
 import 'equipements_page.dart';
 import 'historique_page.dart';
-import 'add_capteur_page.dart'; // 👈 ajouté ici
+import 'add_capteur_page.dart';
+import 'seuils_page.dart';
 
 class HomePage extends StatefulWidget {
   final String token;
@@ -145,6 +146,18 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.logout),
             tooltip: "Déconnexion",
             onPressed: widget.onLogout,
+          ),
+          IconButton(
+            icon: const Icon(Icons.tune),
+            tooltip: "Configurer les seuils",
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SeuilsPage(token: widget.token),
+                ),
+              );
+            },
           ),
         ],
       ),

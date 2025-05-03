@@ -26,6 +26,7 @@ add_executable(SmartHomeServer
     src/routes/routes_auth.cpp
     src/routes/routes_historique.cpp
     src/routes/routes_equipements.cpp
+    src/routes/routes_seuils.cpp
 )
 
 

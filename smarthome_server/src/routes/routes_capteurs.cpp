@@ -169,4 +169,19 @@ void definirRoutesCapteurs(crow::App<AuthMiddleware>& app, DatabaseManagerSQLite
             return crow::response(200, capteurs.dump(4));
         }
     });
+
+    CROW_ROUTE(app, "/types_capteurs").methods(crow::HTTPMethod::Get)([&db]() {
+        sqlite3_stmt* stmt;
+        const char* sql = "SELECT DISTINCT type FROM capteurs";
+        json types = json::array();
+    
+        if (sqlite3_prepare_v2(db.getConnection(), sql, -1, &stmt, nullptr) == SQLITE_OK) {
+            while (sqlite3_step(stmt) == SQLITE_ROW) {
+                types.push_back(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0)));
+            }
+        }
+        sqlite3_finalize(stmt);
+        return crow::response{types.dump(4)};
+    });
+    
 }

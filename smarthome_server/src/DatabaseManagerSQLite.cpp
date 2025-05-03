@@ -50,6 +50,23 @@ bool DatabaseManagerSQLite::creerTableCapteurs() {
     return true;
 }
 
+bool DatabaseManagerSQLite::creerTableSeuils() {
+    const char* sql = R"(
+        CREATE TABLE IF NOT EXISTS seuils (
+            type TEXT PRIMARY KEY,
+            valeur REAL
+        );
+    )";
+    char* errMsg = nullptr;
+    int rc = sqlite3_exec(db, sql, nullptr, nullptr, &errMsg);
+    if (rc != SQLITE_OK) {
+        std::cerr << "❌ Erreur création table seuils : " << errMsg << std::endl;
+        sqlite3_free(errMsg);
+        return false;
+    }
+    return true;
+}
+
 bool DatabaseManagerSQLite::creerTableUtilisateurs() {
     const char* sql = R"(
         CREATE TABLE IF NOT EXISTS utilisateurs (
@@ -119,27 +136,42 @@ bool DatabaseManagerSQLite::ajouterActionHistorique(const std::string& action) {
     return true;
 }
 
-std::vector<json> DatabaseManagerSQLite::getAnomalies(float seuilTemp) {
+std::vector<json> DatabaseManagerSQLite::getAnomalies() {
     std::vector<json> anomalies;
+    std::map<std::string, double> seuils;
 
-    sqlite3_stmt* stmt;
-    const char* sql = "SELECT id, type, valeur, horodatage, room FROM capteurs WHERE type = 'température' AND valeur > ?";
-
-    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
-        sqlite3_bind_double(stmt, 1, seuilTemp);
-
-        while (sqlite3_step(stmt) == SQLITE_ROW) {
-            json capteur = {
-                {"id", sqlite3_column_int(stmt, 0)},
-                {"type", reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1))},
-                {"valeur", sqlite3_column_double(stmt, 2)},
-                {"horodatage", reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3))},
-                {"room", reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4))}
-            };
-            anomalies.push_back(capteur);
+    // Charger les seuils
+    const char* seuilSql = "SELECT type, valeur FROM seuils";
+    sqlite3_stmt* seuilStmt;
+    if (sqlite3_prepare_v2(db, seuilSql, -1, &seuilStmt, nullptr) == SQLITE_OK) {
+        while (sqlite3_step(seuilStmt) == SQLITE_ROW) {
+            std::string type = reinterpret_cast<const char*>(sqlite3_column_text(seuilStmt, 0));
+            double valeur = sqlite3_column_double(seuilStmt, 1);
+            seuils[type] = valeur;
         }
+        sqlite3_finalize(seuilStmt);
     }
 
+    // Chercher les anomalies
+    const char* capteursSql = "SELECT id, type, valeur, horodatage, room FROM capteurs";
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, capteursSql, -1, &stmt, nullptr) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            std::string type = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+            double valeur = sqlite3_column_double(stmt, 2);
+
+            if (seuils.count(type) && valeur > seuils[type]) {
+                json c = {
+                    {"id", sqlite3_column_int(stmt, 0)},
+                    {"type", type},
+                    {"valeur", valeur},
+                    {"horodatage", reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3))},
+                    {"room", reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4))}
+                };
+                anomalies.push_back(c);
+            }
+        }
+    }
     sqlite3_finalize(stmt);
     return anomalies;
 }
@@ -301,3 +333,41 @@ bool DatabaseManagerSQLite::supprimerCapteur(int id) {
     }
     return true;
 }
+
+bool DatabaseManagerSQLite::setSeuil(const std::string& type, float valeur) {
+    const char* sql = R"(
+        INSERT INTO seuils (type, valeur)
+        VALUES (?, ?)
+        ON CONFLICT(type) DO UPDATE SET valeur = excluded.valeur;
+    )";
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+        sqlite3_bind_text(stmt, 1, type.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_double(stmt, 2, valeur);
+        if (sqlite3_step(stmt) == SQLITE_DONE) {
+            sqlite3_finalize(stmt);
+            return true;
+        }
+        sqlite3_finalize(stmt);
+    }
+    return false;
+}
+
+json DatabaseManagerSQLite::getSeuils() {
+    json seuils = json::array();
+    const char* sql = "SELECT type, valeur FROM seuils;";
+    sqlite3_stmt* stmt;
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            seuils.push_back({
+                {"type", reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0))},
+                {"valeur", sqlite3_column_double(stmt, 1)}
+            });
+        }
+        sqlite3_finalize(stmt);
+    }
+
+    return seuils; // ✅ Toujours une liste, même vide
+}
+
