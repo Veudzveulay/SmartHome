@@ -1,5 +1,3 @@
-// lib/pages/alertes_page.dart
-
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/capteur.dart';
@@ -20,10 +18,10 @@ class _AlertesPageState extends State<AlertesPage> {
   @override
   void initState() {
     super.initState();
-    _alertesFuture = ApiService.fetchAlertes(widget.token);
+    _chargerAlertes();
   }
 
-  Future<void> _refreshData() async {
+  void _chargerAlertes() {
     setState(() {
       _alertesFuture = ApiService.fetchAlertes(widget.token);
     });
@@ -38,33 +36,38 @@ class _AlertesPageState extends State<AlertesPage> {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: "Rafraîchir",
-            onPressed: _refreshData,
+            onPressed: _chargerAlertes,
           ),
         ],
       ),
-      body: FutureBuilder<List<Capteur>>(
-        future: _alertesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('❌ Erreur : ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('✅ Aucune alerte détectée.'));
-          } else {
-            final alertes = snapshot.data!;
-            return ListView.builder(
-              itemCount: alertes.length,
-              itemBuilder: (context, index) {
-                return SensorCard(
-                  capteur: alertes[index],
-                  token: widget.token,
-                  onDelete: _refreshData,
-                );
-              },
-            );
-          }
-        },
+      body: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: FutureBuilder<List<Capteur>>(
+          future: _alertesFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text('❌ Erreur : ${snapshot.error}'));
+            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Center(child: Text('✅ Aucune alerte détectée.'));
+            } else {
+              final alertes = snapshot.data!;
+              return ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                itemCount: alertes.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  return SensorCard(
+                    capteur: alertes[index],
+                    token: widget.token,
+                    onDelete: _chargerAlertes,
+                  );
+                },
+              );
+            }
+          },
+        ),
       ),
     );
   }

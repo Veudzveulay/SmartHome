@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
   final void Function(String) onLogin;
@@ -39,6 +40,7 @@ class _LoginPageState extends State<LoginPage> {
         child: Form(
           key: _formKey,
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (_error != null)
                 Text(_error!, style: const TextStyle(color: Colors.red)),
@@ -55,7 +57,19 @@ class _LoginPageState extends State<LoginPage> {
               ElevatedButton(
                 onPressed: _submit,
                 child: const Text('Se connecter'),
-              )
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const RegisterPage(),
+                    ),
+                  );
+                },
+                child: const Text("Pas encore de compte ? S'inscrire"),
+              ),
             ],
           ),
         ),

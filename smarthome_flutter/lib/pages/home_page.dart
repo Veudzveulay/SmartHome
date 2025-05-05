@@ -1,4 +1,3 @@
-// lib/pages/home_page.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
@@ -47,26 +46,22 @@ class _HomePageState extends State<HomePage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('🚨 Alerte détectée !'),
-        content: Text('Il y a $nombreAlertes anomalie(s) détectée(s).'),
+        title: const Text('🚨 Nouvelle alerte détectée !'),
+        content: Text('Il y a $nombreAlertes nouvelle(s) anomalie(s).'),
         actions: [
           TextButton(
-            child: const Text('Voir'),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Ignorer'),
+          ),
+          ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => AlertesPage(token: widget.token),
-                ),
+                MaterialPageRoute(builder: (context) => AlertesPage(token: widget.token)),
               );
             },
-          ),
-          TextButton(
-            child: const Text('Ignorer'),
-            onPressed: () {
-              Navigator.pop(context);
-            },
+            child: const Text('Voir les alertes'),
           ),
         ],
       ),
@@ -88,76 +83,46 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F6F8),
       appBar: AppBar(
         title: const Text('🏠 Maison connectée'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: "Rafraîchir",
             onPressed: _refreshData,
           ),
-          IconButton(
-            icon: const Icon(Icons.map),
-            tooltip: "Voir les pièces",
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => RoomsPage(token: widget.token),
-                ),
-              );
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              switch (value) {
+                case 'rooms':
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => RoomsPage(token: widget.token)));
+                  break;
+                case 'alertes':
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => AlertesPage(token: widget.token)));
+                  break;
+                case 'equipements':
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => EquipementsPage(token: widget.token)));
+                  break;
+                case 'historique':
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => HistoriquePage(token: widget.token)));
+                  break;
+                case 'seuils':
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => SeuilsPage(token: widget.token)));
+                  break;
+                case 'logout':
+                  widget.onLogout();
+                  break;
+              }
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.warning_amber_rounded),
-            tooltip: "Voir les alertes",
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AlertesPage(token: widget.token),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_remote),
-            tooltip: "Commandes",
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => EquipementsPage(token: widget.token)),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.history),
-            tooltip: "Historique",
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => HistoriquePage(token: widget.token),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: "Déconnexion",
-            onPressed: widget.onLogout,
-          ),
-          IconButton(
-            icon: const Icon(Icons.tune),
-            tooltip: "Configurer les seuils",
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SeuilsPage(token: widget.token),
-                ),
-              );
-            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'rooms', child: Text('🏘 Pièces')),
+              const PopupMenuItem(value: 'alertes', child: Text('🚨 Alertes')),
+              const PopupMenuItem(value: 'equipements', child: Text('🔧 Équipements')),
+              const PopupMenuItem(value: 'historique', child: Text('🕓 Historique')),
+              const PopupMenuItem(value: 'seuils', child: Text('📏 Seuils')),
+              const PopupMenuItem(value: 'logout', child: Text('🔓 Déconnexion')),
+            ],
           ),
         ],
       ),
@@ -172,31 +137,35 @@ class _HomePageState extends State<HomePage> {
             return const Center(child: Text('Aucun capteur trouvé.'));
           } else {
             final capteurs = snapshot.data!;
-            return ListView.builder(
-              itemCount: capteurs.length,
-              itemBuilder: (context, index) {
-                return SensorCard(
-                  capteur: capteurs[index],
-                  token: widget.token,
-                  onDelete: _refreshData,
-                );
-              },
+            return RefreshIndicator(
+              onRefresh: _refreshData,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(10),
+                itemCount: capteurs.length,
+                itemBuilder: (context, index) {
+                  return SensorCard(
+                    capteur: capteurs[index],
+                    token: widget.token,
+                    onDelete: _refreshData,
+                  );
+                },
+              ),
             );
           }
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => AddCapteurPage(token: widget.token),
+              builder: (_) => AddCapteurPage(token: widget.token),
             ),
           );
           _refreshData();
         },
-        child: const Icon(Icons.add),
-        tooltip: 'Ajouter un capteur',
+        label: const Text('Ajouter capteur'),
+        icon: const Icon(Icons.add),
       ),
     );
   }

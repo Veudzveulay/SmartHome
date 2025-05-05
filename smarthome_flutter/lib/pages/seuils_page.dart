@@ -69,77 +69,92 @@ class _SeuilsPageState extends State<SeuilsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("📏 Paramétrage des seuils")),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedType,
-                      decoration: const InputDecoration(labelText: 'Type de capteur'),
-                      items: _typesDisponibles.map((type) {
-                        return DropdownMenuItem(value: type, child: Text(type));
-                      }).toList(),
-                      onChanged: (val) => setState(() => _selectedType = val),
-                      validator: (val) =>
-                          val == null || val.isEmpty ? "Type requis" : null,
-                    ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      DropdownButtonFormField<String>(
+                        value: _selectedType,
+                        decoration: const InputDecoration(labelText: 'Type de capteur'),
+                        items: _typesDisponibles.map((type) {
+                          return DropdownMenuItem(value: type, child: Text(type));
+                        }).toList(),
+                        onChanged: (val) => setState(() => _selectedType = val),
+                        validator: (val) =>
+                            val == null || val.isEmpty ? "Type requis" : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _valeurController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'Valeur seuil'),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) return "Valeur requise";
+                          final numValue = double.tryParse(value);
+                          if (numValue == null) return "Doit être un nombre";
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _ajouterOuModifierSeuil,
+                          icon: const Icon(Icons.save),
+                          label: const Text("Enregistrer"),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _valeurController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Valeur seuil'),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) return "Valeur requise";
-                        final numValue = double.tryParse(value);
-                        if (numValue == null) return "Doit être un nombre";
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  ElevatedButton(
-                    onPressed: _ajouterOuModifierSeuil,
-                    child: const Text("💾 Enregistrer"),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-          const Divider(),
-          Expanded(
-            child: FutureBuilder<List<Seuil>>(
-              future: _seuilsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text("❌ Erreur : ${snapshot.error}"));
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text("Aucun seuil défini"));
-                } else {
-                  final seuils = snapshot.data!;
-                  return ListView.builder(
-                    itemCount: seuils.length,
-                    itemBuilder: (context, index) {
-                      final s = seuils[index];
-                      return ListTile(
-                        leading: const Icon(Icons.tune),
-                        title: Text("${s.type} : ${s.valeur}"),
-                      );
-                    },
-                  );
-                }
-              },
+            const SizedBox(height: 16),
+            const Text(
+              "🔍 Seuils existants",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-          ),
-        ],
+            const Divider(),
+            Expanded(
+              child: FutureBuilder<List<Seuil>>(
+                future: _seuilsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text("❌ Erreur : ${snapshot.error}"));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(child: Text("Aucun seuil défini"));
+                  } else {
+                    final seuils = snapshot.data!;
+                    return ListView.separated(
+                      itemCount: seuils.length,
+                      separatorBuilder: (_, __) => const Divider(),
+                      itemBuilder: (context, index) {
+                        final s = seuils[index];
+                        return ListTile(
+                          leading: const Icon(Icons.tune),
+                          title: Text("${s.type}"),
+                          subtitle: Text("Seuil : ${s.valeur}"),
+                          trailing: const Icon(Icons.warning_amber),
+                        );
+                      },
+                    );
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
